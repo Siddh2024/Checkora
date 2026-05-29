@@ -144,6 +144,9 @@ body {
 }
 
 .profile-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     background: #111827;
     color: #f0c040;
     border: 1px solid #333;
@@ -154,7 +157,19 @@ body {
     transition: 0.3s ease;
 }
 
-.profile-btn:hover{
+.profile-arrow {
+    display: inline-block;
+    vertical-align: middle;
+    width: 1em;
+    height: 1em;
+    transition: transform 0.3s ease;
+}
+
+.profile-dropdown:hover .profile-arrow {
+    transform: rotate(-90deg);
+}
+
+.profile-btn:hover {
     border-color: #f0c040;
 }
 
