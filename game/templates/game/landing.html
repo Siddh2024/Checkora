@@ -708,8 +708,7 @@
           </div>
         </div>
         <div style="padding:16px 28px; border-top:1px solid rgba(255,255,255,0.07); display:flex; justify-content:flex-end; flex-shrink:0; background:#131522;">
-          <button type="button" onclick="document.getElementById('termsModal').style.display='none'" style="background:linear-gradient(135deg,#f0c040,#d4a020); color:#0f0f1a; border:none; padding:10px 28px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer; transition:all 0.2s ease; box-shadow:0 4px 16px rgba(240,192,64,0.3);">I Agree</button>
-        </div>
+          <button type="button" onclick="closeTermsModal()" style="background:linear-gradient(135deg,#f0c040,#d4a020); color:#0f0f1a; border:none; padding:10px 28px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer; transition:all 0.2s ease; box-shadow:0 4px 16px rgba(240,192,64,0.3);">I Agree</button>        </div>
       </div>
   </div>
   <script>
@@ -740,6 +739,20 @@
   
       modal.addEventListener('click', function(e) {
         if (e.target === modal) closeTermsModal();
+      });
+      modal.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+          const focusable = modal.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       });
     })();
   </script>
