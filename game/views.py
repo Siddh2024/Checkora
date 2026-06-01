@@ -44,6 +44,7 @@ from .engine import ChessGame
 from .models import GameResult
 logger = logging.getLogger(__name__)
 from game.services import cleanup_stale_games
+from .analysis import build_summary
 
 def landing(request):
     """Render the landing page introduction to Checkora."""
@@ -1242,3 +1243,26 @@ def confirm_delete_account(request, uidb64, token):
     )
 
     return redirect('landing')
+@csrf_exempt
+@require_POST
+def analyze_game_view(request):
+    """
+    Analyze a completed game based on its move history and return statistics.
+    Expects JSON payload with 'moves' (list of notation strings), 'result', and 'reason'.
+    """
+    try:
+        data = json.loads(request.body)
+        moves = data.get('moves', [])
+        result = data.get('result', 'Unknown')
+        reason = data.get('reason', 'Unknown')
+        
+        # Ensure moves is a list of strings
+        if not isinstance(moves, list):
+            moves = []
+        moves = [str(m) for m in moves]
+            
+        summary = build_summary(moves, result, reason)
+        return JsonResponse(summary)
+    except Exception as e:
+        logger.error('Failed to analyze game: %s', e)
+        return JsonResponse({'error': 'Failed to analyze game'}, status=400)

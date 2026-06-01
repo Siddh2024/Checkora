@@ -1834,53 +1834,7 @@
                 return false;
             }
 
-            function detectOpening(moves) {
-                if (!moves || moves.length === 0) return 'Standard Game';
-                
-                const m1 = moves[0];
-                const m2 = moves[1];
-                const m3 = moves[2];
-                const m4 = moves[3];
-                const m5 = moves[4];
-
-                if (m1 === 'e4') {
-                    if (m2 === 'c5') return 'Sicilian Defense';
-                    if (m2 === 'e5') {
-                        if (m3 === 'Nf3') {
-                            if (m4 === 'Nc6') {
-                                if (m5 === 'Bb5') return 'Ruy Lopez';
-                                if (m5 === 'Bc4') return 'Italian Game';
-                                if (m5 === 'd4') return 'Scotch Game';
-                            }
-                            if (m4 === 'Nf6') return 'Petrov Defense';
-                        }
-                        return 'King\'s Pawn Game';
-                    }
-                    if (m2 === 'e6') return 'French Defense';
-                    if (m2 === 'c6') return 'Caro-Kann Defense';
-                    if (m2 === 'd6') return 'Pirc Defense';
-                }
-                if (m1 === 'd4') {
-                    if (m2 === 'd5') {
-                        if (m3 === 'c4') return 'Queen\'s Gambit';
-                        return 'Queen\'s Pawn Game';
-                    }
-                    if (m2 === 'Nf6') {
-                        if (m3 === 'c4') {
-                            if (m4 === 'e6') return 'Nimzo-Indian Defense';
-                            if (m4 === 'g6') return 'King\'s Indian Defense';
-                        }
-                        return 'Indian Defense';
-                    }
-                }
-                if (m1 === 'Nf3') return 'Réti Opening';
-                if (m1 === 'c4') return 'English Opening';
-                if (m1 === 'f4') return 'Bird\'s Opening';
-                
-                return 'Open Game';
-            }
-
-            function endGame(reason, color, drawReason = null) {
+            async function endGame(reason, color, drawReason = null) {
                 if (gameOver) return;
                 gameOver = true;
                 replayMode = true;
@@ -2232,9 +2186,35 @@
                 }
 
                 // 6. Opening Book and Review Highlights
+                let analysisData = null;
+                try {
+                    analysisData = await post('/api/analyze-game/', {
+                        moves: replayMoves,
+                        result: resultState,
+                        reason: reason
+                    });
+                } catch(e) {
+                    console.error("Failed to fetch post-game analysis", e);
+                }
+
                 const openingNameEl = document.getElementById('resOpeningName');
                 if (openingNameEl) {
-                    openingNameEl.textContent = detectOpening(replayMoves);
+                    openingNameEl.textContent = analysisData?.opening || 'Standard Game';
+                }
+                
+                // Populate new stats
+                if (analysisData) {
+                    const capEl = document.getElementById('resAnalysisCaptures');
+                    if (capEl) capEl.textContent = analysisData.captures || 0;
+                    
+                    const chkEl = document.getElementById('resAnalysisChecks');
+                    if (chkEl) chkEl.textContent = analysisData.checks || 0;
+                    
+                    const matEl = document.getElementById('resAnalysisCheckmates');
+                    if (matEl) matEl.textContent = analysisData.checkmates || 0;
+                    
+                    const proEl = document.getElementById('resAnalysisPromotions');
+                    if (proEl) proEl.textContent = analysisData.promotions || 0;
                 }
                 
                 const bestMoveEl = document.getElementById('resBestMove');
