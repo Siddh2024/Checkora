@@ -1130,10 +1130,6 @@ def terms_view(request):
     """Directly serve the static terms and conditions template page."""
     return render(request, 'game/terms.html')
 
-def contact_view(request):
-    """Directly serve the static contact page template instance."""
-    return render(request, 'game/contact.html')
-
 def password_reset_account_selection(request):
 
     email = request.GET.get('email')
