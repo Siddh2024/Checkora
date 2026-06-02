@@ -19,6 +19,15 @@
                 for (const t of ['k', 'q', 'r', 'b', 'n', 'p'])
                     PIECE_IMG[c + t] = `https://images.chesscomfiles.com/chess-themes/pieces/neo/150/${c}${t}.png`;
 
+            const PIECE_NAMES = {
+                'p': 'pawn',
+                'r': 'rook',
+                'n': 'knight',
+                'b': 'bishop',
+                'q': 'queen',
+                'k': 'king'
+            };
+
             let board = [];
             let turn = 'white';
             let selected = null;
@@ -1390,9 +1399,16 @@
                             startTimer();
                             updateMaterialUI(board);
                         let a11yMsg = '';
-                        if (data.move_history && data.move_history.length > 0) {
+                        const playedColor = turn === 'white' ? 'Black' : 'White';
+                        if (data.captured) {
+                            const targetSquare = getSquareLabel(tr, tc);
+                            const pieceCode = (typeof data.captured === 'string') ? data.captured : '';
+                            const pieceName = PIECE_NAMES[pieceCode.toLowerCase()] || 'piece';
+                            const capturer = playedColor;
+                            const capturedColor = capturer === 'White' ? 'Black' : 'White';
+                            a11yMsg = `${capturer} captured ${capturedColor}'s ${pieceName} on ${targetSquare}. `;
+                        } else if (data.move_history && data.move_history.length > 0) {
                             const lastMove = data.move_history[data.move_history.length - 1].notation;
-                            const playedColor = turn === 'white' ? 'Black' : 'White';
                             a11yMsg = `${playedColor} played ${lastMove}. `;
                         }
 
@@ -1400,7 +1416,7 @@
                         if (!gameEnded) {
                             if (data.game_status === 'check') {
                                 applyCheckHighlight();
-                                const checkMsg = turn === 'white' ? 'White is in check!' : 'Black is in check!';
+                                const checkMsg = turn === 'white' ? 'Check to White King!' : 'Check to Black King!';
                                 showStatus(checkMsg, true);
                                 a11yMsg += checkMsg;
                             } else {
@@ -1497,7 +1513,15 @@
                             startTimer();
                             updateMaterialUI(board);
                         let a11yMsg = '';
-                        if (data.move_history && data.move_history.length > 0) {
+                        const playedColor = turn === 'white' ? 'Black' : 'White';
+                        if (data.captured) {
+                            const targetSquare = getSquareLabel(mv.to_row, mv.to_col);
+                            const pieceCode = (typeof data.captured === 'string') ? data.captured : '';
+                            const pieceName = PIECE_NAMES[pieceCode.toLowerCase()] || 'piece';
+                            const capturer = playedColor;
+                            const capturedColor = capturer === 'White' ? 'Black' : 'White';
+                            a11yMsg = `${capturer} captured ${capturedColor}'s ${pieceName} on ${targetSquare}. `;
+                        } else if (data.move_history && data.move_history.length > 0) {
                             const lastMove = data.move_history[data.move_history.length - 1].notation;
                             a11yMsg = `AI played ${lastMove}. `;
                         }
@@ -1506,8 +1530,9 @@
                         if (!gameEnded) {
                             if (data.game_status === 'check') {
                                 applyCheckHighlight();
-                                showStatus('You are in check!', true);
-                                a11yMsg += 'You are in check!';
+                                const checkMsg = turn === 'white' ? 'Check to White King!' : 'Check to Black King!';
+                                showStatus(checkMsg, true);
+                                a11yMsg += checkMsg;
                             } else {
                                 highlightCheck();
                                 showStatus('Your turn.', false);
@@ -2260,9 +2285,32 @@
                 
                 // Clean a11y announcement
                 const winnerColorText = color === 'white' ? 'Black' : 'White';
-                let cleanMsg = reason === 'checkmate' || reason === 'resign' 
-                    ? `Game over. ${winnerColorText} wins by ${reason}.` 
-                    : `Game over. Draw by ${reason || 'stalemate'}.`;
+                let cleanMsg = '';
+                if (reason === 'checkmate') {
+                    cleanMsg = `Checkmate. ${winnerColorText} wins!`;
+                } else if (reason === 'resign') {
+                    const resigningColorText = color === 'white' ? 'White' : 'Black';
+                    cleanMsg = `${resigningColorText} has resigned. ${winnerColorText} wins!`;
+                } else if (reason === 'timeout') {
+                    const timeoutColorText = color === 'white' ? 'White' : 'Black';
+                    cleanMsg = `${timeoutColorText} ran out of time. ${winnerColorText} wins!`;
+                } else if (reason === 'stalemate') {
+                    cleanMsg = 'Game drawn by stalemate.';
+                } else if (reason === 'draw') {
+                    if (drawReason === 'agreement') {
+                        cleanMsg = 'Game drawn by agreement.';
+                    } else if (drawReason === 'threefold_repetition') {
+                        cleanMsg = 'Game drawn by threefold repetition.';
+                    } else if (drawReason === 'fifty_move_rule') {
+                        cleanMsg = 'Game drawn by fifty-move rule.';
+                    } else if (drawReason === 'insufficient_material') {
+                        cleanMsg = 'Game drawn by insufficient material.';
+                    } else {
+                        cleanMsg = 'Game drawn by agreement / stalemate / threefold repetition.';
+                    }
+                } else {
+                    cleanMsg = 'Game drawn by agreement / stalemate / threefold repetition.';
+                }
                 announceMove(cleanMsg);
                 
                 document.title = 'Game Over - Checkora';
