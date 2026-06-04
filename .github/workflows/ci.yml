@@ -49,19 +49,86 @@ jobs:
       reason: ${{ steps.check.outputs.reason }}
 
     steps:
-      - name: 📥 Checkout PR Guardian script from base branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          sparse-checkout: .github/scripts
-
       - name: 🛡️ Check PR author is assigned to linked issue(s)
         id: check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-        run: python .github/scripts/pr_assignee_check.py ci
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const body = pr.body || '';
+            const title = pr.title || '';
+            const prNumber = pr.number;
+
+            function parseIssueNumbers(text) {
+              const nums = new Set();
+              const patterns = [
+                /\b(?:fix(?:e)?s?|close[sd]?|resolve[sd]?)\s+(?:[^\n#]*)?#(\d+)/gi,
+                /fixes\s+#(\d+)/gi,
+                /related issue[^\n]*#(\d+)/gi,
+              ];
+              for (const pattern of patterns) {
+                for (const match of text.matchAll(pattern)) {
+                  nums.add(parseInt(match[1], 10));
+                }
+              }
+              return [...nums].sort((a, b) => a - b);
+            }
+
+            async function evaluatePr() {
+              try {
+                const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner, repo, username: author,
+                });
+                if (perm.permission === 'admin' || perm.permission === 'maintain') {
+                  return { allowed: true, reason: 'maintainer_bypass' };
+                }
+              } catch (e) {
+                core.info(`Permission lookup: ${e.message}`);
+              }
+
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner, repo, pull_number: prNumber, per_page: 100,
+              });
+              if (
+                files.length > 0 &&
+                files.every((f) => f.filename.startsWith('.github/') || f.filename === 'vercel.json')
+              ) {
+                return { allowed: true, reason: 'infra_only' };
+              }
+
+              if (/#\s*\(\s*issue\s+number\s*\)/i.test(body)) {
+                return { allowed: false, reason: 'template_not_filled' };
+              }
+
+              const issueNumbers = parseIssueNumbers(`${title}\n${body}`);
+              if (!issueNumbers.length) {
+                return { allowed: false, reason: 'no_issue_linked' };
+              }
+
+              for (const num of issueNumbers) {
+                const { data: issue } = await github.rest.issues.get({
+                  owner, repo, issue_number: num,
+                });
+                if (issue.pull_request) continue;
+                const assignees = (issue.assignees || []).map((u) => u.login);
+                if (!assignees.length) {
+                  return { allowed: false, reason: `issue_${num}_unassigned` };
+                }
+                if (!assignees.includes(author)) {
+                  return { allowed: false, reason: `issue_${num}_assignee_mismatch` };
+                }
+              }
+
+              return { allowed: true, reason: 'ok' };
+            }
+
+            const { allowed, reason } = await evaluatePr();
+            core.setOutput('ci_allowed', allowed ? 'true' : 'false');
+            core.setOutput('reason', reason);
+            core.info(`ci_allowed=${allowed} reason=${reason}`);
 
   # ───────────────────────────────────────────────────────────────────
   # JOB 1 — Python Lint (flake8)
