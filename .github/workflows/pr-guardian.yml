@@ -1,4 +1,4 @@
-# Labels PRs that bypass issue assignment rules (CI is gated in ci.yml).
+# Closes PRs that bypass issue assignment rules (CI is gated in ci.yml).
 name: PR Guardian
 
 on:
@@ -12,7 +12,7 @@ permissions:
   issues: write
 
 jobs:
-  label:
+  enforce:
     name: PR assignee check
     runs-on: ubuntu-latest
     steps:
@@ -57,18 +57,109 @@ jobs:
               }
             }
 
-      - name: Apply or remove guardian labels
+      - name: Label, comment, and close PR on violation
+        if: steps.check.outputs.ci_allowed != 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const allowed = '${{ steps.check.outputs.ci_allowed }}' === 'true';
             const reason = '${{ steps.check.outputs.reason }}';
-            const prNumber = context.payload.pull_request.number;
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const author = pr.user.login;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            const remove = ['assignee-mismatch', 'no-issue-linked'];
-            for (const name of remove) {
+            const label = reason === 'no_issue_linked' ? 'no-issue-linked' : 'assignee-mismatch';
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: prNumber,
+              labels: [label],
+            });
+
+            let detail;
+            if (reason === 'no_issue_linked') {
+              detail = [
+                'This pull request does not reference an issue (expected format: `Fixes #123` in the description).',
+                '',
+                '**What to do:**',
+                '1. Ask a maintainer to assign you to an open issue.',
+                '2. Open a new PR that links that issue and lists you as the assignee.',
+              ].join('\n');
+            } else if (reason.includes('unassigned')) {
+              const issueNum = reason.match(/issue_(\d+)_/)?.[1] || '?';
+              detail = [
+                `Issue #${issueNum} is not assigned to anyone.`,
+                '',
+                '**What to do:**',
+                `1. Comment on issue #${issueNum} and ask to be assigned (or wait for a maintainer to assign you).`,
+                '2. After you are assigned, open a new PR with `Fixes #' + issueNum + '` in the description.',
+              ].join('\n');
+            } else {
+              const issueNum = reason.match(/issue_(\d+)_/)?.[1] || '?';
+              detail = [
+                `@${author} is not assigned to issue #${issueNum}. Only the issue assignee should open a PR for that issue.`,
+                '',
+                '**What to do:**',
+                `1. Get assigned to issue #${issueNum} before contributing.`,
+                '2. Open a new PR once you appear under **Assignees** on the issue.',
+              ].join('\n');
+            }
+
+            const marker = '<!-- pr-guardian -->';
+            const body = [
+              marker,
+              '## PR closed by PR Guardian',
+              '',
+              detail,
+              '',
+              'CI and Vercel preview deployments are not run for PRs that bypass issue assignment.',
+              '',
+              '_This comment is posted automatically. If you believe this is a mistake, contact a maintainer._',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find((c) => c.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+            if (pr.state === 'open') {
+              await github.rest.pulls.update({
+                owner,
+                repo,
+                pull_number: prNumber,
+                state: 'closed',
+              });
+              core.info(`Closed PR #${prNumber} (${reason})`);
+            }
+
+      - name: Clear guardian labels when PR is allowed
+        if: steps.check.outputs.ci_allowed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            for (const name of ['assignee-mismatch', 'no-issue-linked']) {
               try {
                 await github.rest.issues.removeLabel({
                   owner,
@@ -79,43 +170,4 @@ jobs:
               } catch (err) {
                 if (err.status !== 404) throw err;
               }
-            }
-
-            if (allowed) return;
-
-            const label = reason === 'no_issue_linked' ? 'no-issue-linked' : 'assignee-mismatch';
-            await github.rest.issues.addLabels({
-              owner,
-              repo,
-              issue_number: prNumber,
-              labels: [label],
-            });
-
-            const body = reason === 'no_issue_linked'
-              ? 'CI skipped: link an issue in this PR (e.g. `Fixes #123`) and get assigned before opening a PR.'
-              : 'CI skipped: you must be assigned to every linked issue before this PR can run checks or Vercel previews (when `GITHUB_TOKEN` is configured on Vercel).';
-
-            const marker = '<!-- pr-guardian -->';
-            const { data: comments } = await github.rest.issues.listComments({
-              owner,
-              repo,
-              issue_number: prNumber,
-            });
-            const existing = comments.find((c) => c.body?.includes(marker));
-            const fullBody = `${marker}\n${body}`;
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body: fullBody,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body: fullBody,
-              });
             }

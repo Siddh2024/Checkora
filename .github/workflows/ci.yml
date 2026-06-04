@@ -2,7 +2,7 @@
 # Triggers:
 #   • Every push to EVERY branch  → lint + compile + test + migrate-check + security
 #   • Every PR targeting main      → same checks (required to merge)
-#   • PRs with assignee mismatch   → CI skipped (see pr-guardian job)
+#   • PRs with assignee mismatch   → auto-closed + CI skipped (pr-guardian.yml)
 #   • Push/merge to main only      → all checks THEN deploy to Vercel
 # Contributors see test results immediately after any push — no PR needed.
 # -------------------------------------------------------------------
