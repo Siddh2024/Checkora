@@ -135,9 +135,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-test-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            pip-test-${{ runner.os }}-
+            pip-${{ runner.os }}-
 
       - name: 📥 Install project dependencies
         run: |
