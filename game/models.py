@@ -163,6 +163,7 @@ class UserAchievement(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.achievement.title}"
 
+
 class FeaturedBadge(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -182,10 +183,11 @@ class FeaturedBadge(models.Model):
             ).count()
 
             if count >= 3:
-                raise ValueError(
+                raise ValidationError(
                     "Users can only feature up to 3 badges"
                 )
 
         super().save(*args, **kwargs)
+
     class Meta:
         unique_together = ("user", "achievement")
