@@ -2585,7 +2585,6 @@ def download_badge(request, achievement_id):
         logger.error(
             "Badge generation failed for achievement %s: %s",
             achievement_id,
-            exc
         )
 
         return HttpResponseServerError(
