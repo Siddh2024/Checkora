@@ -25,7 +25,7 @@ from django.utils.encoding import (
     force_str
 )
 from django.utils.text import slugify
-
+from .progression import award_xp
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.views import PasswordResetView
@@ -53,6 +53,7 @@ from .models import (
     Achievement,
     UserAchievement,
     FeaturedBadge,
+    UserProgress,
 )
 logger = logging.getLogger(__name__)
 from game.services import (
@@ -1297,6 +1298,9 @@ def stats_view(request):
     ).exclude(mode__in=['', None])
 
     recent = user_results.order_by('-played_at')[:20]
+    progress, _ = UserProgress.objects.get_or_create(
+        user=request.user
+    )
     ai_results = user_results.filter(mode='ai')
 
     # If winner == player_color, the user won
@@ -1320,6 +1324,7 @@ def stats_view(request):
         'ai_wins': ai_wins,
         'ai_draws': ai_draws,
         'win_percentage': round(win_percentage, 2),
+        'progress': progress,
     })
 
 @login_required
@@ -1348,6 +1353,8 @@ def update_puzzle_stats(request):
         user=request.user
     )
 
+    old_solved = stats.puzzles_solved
+
     stats.puzzles_solved = data.get("puzzles_solved", 0)
     stats.current_streak = data.get("current_streak", 0)
     stats.best_streak = data.get("best_streak", 0)
@@ -1355,6 +1362,17 @@ def update_puzzle_stats(request):
 
     stats.save()
     
+    new_solved = stats.puzzles_solved
+
+    if new_solved > old_solved:
+        earned_xp = (new_solved - old_solved) * 10
+
+        award_xp(
+            request.user,
+            earned_xp
+        )
+
+
     check_puzzle_achievements(
         request.user,
         stats
@@ -2420,6 +2438,12 @@ def complete_lesson(request, lesson_name):
     if lesson_name not in _LESSON_NAMES:
         raise Http404("Lesson not found")
 
+    already_completed = LessonProgress.objects.filter(
+        user=request.user,
+        lesson_name=lesson_name,
+        completed=True
+    ).exists()
+
     LessonProgress.objects.update_or_create(
         user=request.user,
         lesson_name=lesson_name,
@@ -2429,6 +2453,12 @@ def complete_lesson(request, lesson_name):
         }
     )
 
+    if not already_completed:
+        award_xp(
+            request.user,
+            25
+        )
+    
     return redirect(
         "lesson_detail",
         lesson_name=slugify(lesson_name)
