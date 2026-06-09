@@ -69,10 +69,6 @@ def landing(request):
 def preloader(request):
     return render(request, 'game/preloading.html')
 
-def disclaimer(request):
-    """Render the standalone platform disclaimer page."""
-    return render(request, 'game/disclaimer.html')
-
 @ensure_csrf_cookie
 def index(request):
     """Render the board and initialise a new game in the session."""
