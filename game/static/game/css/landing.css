@@ -477,15 +477,6 @@ body {
     display: inline-block;
 }
 
-.hero-subtitle {
-    font-size: clamp(1.05rem, 2.5vw, 1.25rem);
-    color: var(--text-secondary);
-    max-width: 640px;
-    margin: 0 auto 2.8rem auto;
-    line-height: 1.6;
-    font-weight: 400;
-}
-
 .text-highlight {
     color: #f1f5f9;
     font-weight: 600;
