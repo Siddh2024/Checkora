@@ -646,7 +646,7 @@
     let replayIndex = 0;
     let replayBoard = null;
     let autoReplayInterval = null;
-
+    let isAutoReplaying = false;
     let pgnDownloadTimeout = null;
     let fenCopyTimeout = null;
     /* ==========================================================
@@ -3280,17 +3280,22 @@
         playReplayBtn.onclick = () => {
 
             if (autoReplayInterval) {
+                isAutoReplaying = false;
                 clearTimeout(autoReplayInterval);
                 autoReplayInterval = null;
                 playReplayBtn.textContent = '▶';
                 return;
             }
             playReplayBtn.textContent = '⏸';
+            isAutoReplaying = true;
 
             // 1. Define the relay race function
             const playNextMove = () => {
+                if (!isAutoReplaying) return;
+
                 if (replayIndex >= replayMoves.length) {
                     autoReplayInterval = null;
+                    isAutoReplaying = false;
                     playReplayBtn.textContent = '▶';
                     return;
                 }
@@ -3299,11 +3304,15 @@
                 goToReplayMove(replayIndex);
 
                 // Schedule the next move only after this one is triggered
-                autoReplayInterval = setTimeout(playNextMove, 1000);
+                if (isAutoReplaying) {
+                    autoReplayInterval = setTimeout(playNextMove, 1000);
+                }
             };
 
             // 2. Kick off the chain reaction
-            autoReplayInterval = setTimeout(playNextMove, 1000);
+            if (isAutoReplaying) {
+                autoReplayInterval = setTimeout(playNextMove, 1000);
+            }
         };
     }
 
