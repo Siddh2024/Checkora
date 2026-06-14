@@ -104,10 +104,11 @@ Executes a move on the board after validating it via the C++ engine.
       "from_col": 4,
       "to_row": 4,
       "to_col": 4,
-      "promotion_piece": "q" // Optional: only required for pawn promotion
+      "promotion_piece": "q"
     }
     ```
-*   **Success Response:**
+
+    `promotion_piece` is optional and only required for pawn promotion.
     ```json
     {
       "valid": true,
@@ -308,17 +309,42 @@ Allows players to offer or accept a draw agreement in PvP mode.
 *   **URL:** `/api/draw/`
 *   **Method:** `POST`
 *   **Request Body:**
+
     ```json
     {
-      "action": "offer" // Can be "offer" , "accept" or "decline"
+      "action": "offer"
     }
     ```
-*   **Success Response:**
+
+Valid values for `action`:
+
+- `offer`
+- `accept`
+- `decline`
+
+*   **Success Response (offer):**
+
+    ```json
+    {
+      "success": true
+    }
+    ```
+
+*   **Success Response (accept):**
+
     ```json
     {
       "success": true,
-      "game_status": "draw_agreement", // Only present if action was "accept"
+      "game_status": "draw_agreement",
       "draw_reason": "agreement"
+    }
+    ```
+
+*   **Success Response (decline):**
+
+    ```json
+    {
+      "success": true
     }
     ```
 
