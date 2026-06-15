@@ -220,7 +220,7 @@ class AnalyzeGameCsrfTest(TestCase):
 
         # Fetch a CSRF cookie by hitting a GET endpoint
         csrf_client.get(reverse('index'))
-        token = csrf_client.cookies.get('csrftoken').value
+        token = csrf_client.cookies['csrftoken'].value
 
         response = csrf_client.post(
             reverse('analyze_game'),
