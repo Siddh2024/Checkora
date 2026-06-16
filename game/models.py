@@ -396,8 +396,21 @@ class Reply(models.Model):
         related_name="forum_replies"
     )
 
+    reply_to = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="child_replies"
+    )  
+
     content = models.TextField()
+
+    is_edited = models.BooleanField(default=False)  
+    is_deleted = models.BooleanField(default=False)  
+
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  
 
     class Meta:
         ordering = ["created_at"]
