@@ -1651,7 +1651,7 @@ body {
     position: absolute !important;
     top: 37px !important;
     right: 0 !important;
-    transform: 0 !important;
+     !important;
 }
 
 .promo-overlay .btn-gold {
