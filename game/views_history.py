@@ -35,6 +35,10 @@ from django.views.decorators.http import require_GET, require_POST
 from game.models import GameRecord
 
 
+def _normalize_pgn(pgn: str) -> str:
+    return pgn.replace('++', '+').replace('##', '#').replace('+#', '#').replace('#+', '#')
+
+
 # ---------------------------------------------------------------------------
 # Internal helper — call this when a game ends
 # ---------------------------------------------------------------------------
@@ -181,7 +185,7 @@ def api_replay_pgn(request, game_id: int):
     except GameRecord.DoesNotExist:
         return JsonResponse({"error": "Game not found or has expired."}, status=404)
 
-    pgn = record.pgn.replace('++', '+').replace('##', '#').replace('+#', '#').replace('#+', '#')
+    pgn = _normalize_pgn(record.pgn)
     return JsonResponse({"pgn": pgn})
 
 
@@ -218,7 +222,7 @@ def api_download_pgn(request, game_id: int):
         f"checkora_{record.created_at.strftime('%Y%m%d_%H%M%S')}"
         f"_{record.result.replace('/', '-')}.pgn"
     )
-    pgn = record.pgn.replace('++', '+').replace('##', '#').replace('+#', '#').replace('#+', '#')
+    pgn = _normalize_pgn(record.pgn)
     response = HttpResponse(pgn, content_type="application/x-chess-pgn")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response

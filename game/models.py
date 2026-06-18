@@ -416,6 +416,7 @@ class Discussion(models.Model):
     @property
     def is_expired(self):
         return self.expires_at <= timezone.now()
+
     def __str__(self):
         return self.title
 
