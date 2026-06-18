@@ -263,11 +263,14 @@ def update_opening_progress(
     if not user:
         return None
 
-    progress, _ = OpeningProgress.objects.get_or_create(
+    progress, created= OpeningProgress.objects.get_or_create(
         user=user,
         opening_name=opening_name,
     )
 
+    if created:
+        progress.openings_started = 1
+    
     if correct_move:
         progress.correct_moves += 1
 
@@ -276,6 +279,11 @@ def update_opening_progress(
 
     if checkpoint is not None:
         progress.last_checkpoint = checkpoint
+        
+        progress.completion_percentage = min(
+            100,
+            checkpoint
+        )
 
     total_moves = (
         progress.correct_moves +

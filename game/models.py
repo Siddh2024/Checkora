@@ -1,4 +1,8 @@
 from django.db import models
+from django.core.validators import (
+    MinValueValidator,
+    MaxValueValidator,
+)
 from django.conf import settings
 from django.db.models import Q
 from django.core.exceptions import ValidationError
@@ -258,11 +262,19 @@ class OpeningProgress(models.Model):
     )
 
     completion_percentage = models.FloatField(
-        default=0
+        default=0,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(100),
+        ],
     )
 
     accuracy_percentage = models.FloatField(
-        default=0
+        default=0,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(100),
+        ],
     )
 
     last_practiced = models.DateTimeField(
@@ -274,6 +286,21 @@ class OpeningProgress(models.Model):
             "user",
             "opening_name"
         )
+        
+        indexes = [
+            models.Index(
+                fields=[
+                    "user",
+                    "openings_completed",
+                ]
+            ),
+            models.Index(
+                fields=[
+                    "user",
+                    "openings_started",
+                ]
+            ),
+        ]
 
     def __str__(self):
         return (
@@ -281,6 +308,9 @@ class OpeningProgress(models.Model):
             f"{self.opening_name}"
         )
          
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 class Achievement(models.Model):
     CATEGORY_CHOICES = [
         ("gameplay", "Gameplay"),

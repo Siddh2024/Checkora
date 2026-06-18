@@ -3419,13 +3419,23 @@ def opening_detail(request, slug):
 @login_required
 @require_POST
 def update_opening_stats(request):
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Invalid JSON payload",
+            },
+            status=400,
+        )
 
     opening_name = data.get("opening_name")
     completed = data.get("completed", False)
     accuracy = data.get("accuracy", 0)
 
-    progress = update_opening_progress(
+    update_opening_progress(
         request.user,
         opening_name,
         completed=completed,
