@@ -421,7 +421,7 @@ body {
 }
 
 .cursor.orbit {
-    animation: cursorOrbit 0.9s ease-in-out infinite;
+    animation: cursor-Orbit 0.9s ease-in-out infinite;
 }
 
 .cursor.trail::after {
@@ -452,7 +452,7 @@ body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    animation: sparkleSprinkle 0.9s ease-out infinite;
+    animation: sparkle-Sprinkle 0.9s ease-out infinite;
     --dx: -18px;
     --dy: -12px;
 }
@@ -461,7 +461,7 @@ body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    animation: sparkleSprinkle 0.95s ease-out infinite;
+    animation: sparkle-Sprinkle 0.95s ease-out infinite;
     --dx: 18px;
     --dy: 10px;
 }
