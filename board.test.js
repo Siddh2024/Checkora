@@ -313,9 +313,6 @@ describe("Board UI Interactions", () => {
     
     // Call startNewGame to initialize board variable and DOM
     await startNewGame('pvp', 'white', 'medium', 'startpos', 10);
-    
-    // Now that squares exist, we can deselect any leftover state
-    try { deselect(); } catch(e) {}
   });
 
   it('toggleSquareHighlight toggles custom-highlight class', () => {
@@ -327,7 +324,7 @@ describe("Board UI Interactions", () => {
   });
 
   it('showPromoModal makes overlay active', () => {
-    showPromoModal(0, 0, 'q');
+    showPromoModal('white');
     const overlay = document.getElementById("promoOverlay");
     expect(overlay.classList.contains("active")).toBe(true);
   });
