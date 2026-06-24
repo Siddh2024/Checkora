@@ -98,6 +98,9 @@
 
 <body>
     <div style="display:none" aria-hidden="true">{% csrf_token %}</div>
+    <script>
+        window.USER_AVATAR_URL = "{% if user.is_authenticated and user.profile.avatar %}{{ user.profile.avatar|escapejs }}{% else %}{% endif %}";
+    </script>
 
     <!-- MOBILE FAB -->
 <div class="m-fab" id="mFab">
@@ -388,12 +391,18 @@
         <!-- Left Panel -->
         <div class="panel">
             <div class="card">
-                <div class="card-title">Captured by <span id="whiteCapturedName">White</span></div>
+                <div class="card-title">
+                    <img id="whiteCapturedAvatar" class="nav-avatar" src="" style="display:none; width:18px; height:18px; border-radius:50%; object-fit:cover;">
+                    Captured by <span id="whiteCapturedName">White</span>
+                </div>
                 <div class="captured-list" id="whiteCaptured"></div>
                 <div class="captured-score">Points: <span id="whitePoints">+0</span></div>
             </div>
             <div class="card">
-                <div class="card-title">Captured by <span id="blackCapturedName">Black</span></div>
+                <div class="card-title">
+                    <img id="blackCapturedAvatar" class="nav-avatar" src="" style="display:none; width:18px; height:18px; border-radius:50%; object-fit:cover;">
+                    Captured by <span id="blackCapturedName">Black</span>
+                </div>
                 <div class="captured-list" id="blackCaptured"></div>
                 <div class="captured-score">Points: <span id="blackPoints">+0</span></div>
             </div>
@@ -424,6 +433,7 @@
             <div class="clocks">
                 <div id="whiteClock" class="clock white active">
                     <span class="label">
+                        <img id="whitePlayerAvatar" class="nav-avatar" src="" style="display:none; width:20px; height:20px; border-radius:50%; object-fit:cover;">
                         <span id="whiteNameLabel">WHITE</span>
                         <span id="whiteYouTag"
                             style="display: none; color: #f0c040; margin-left: 4px; font-size: 0.8em;">(YOU)</span>
@@ -441,6 +451,7 @@
 
                 <div id="blackClock" class="clock black">
                     <span class="label">
+                        <img id="blackPlayerAvatar" class="nav-avatar" src="" style="display:none; width:20px; height:20px; border-radius:50%; object-fit:cover;">
                         <span id="blackNameLabel">BLACK</span>
                         <span id="blackYouTag"
                             style="display: none; color: #f0c040; margin-left: 4px; font-size: 0.8em;">(YOU)</span>
